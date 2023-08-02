@@ -6,7 +6,7 @@ from langchain import LLMChain, GoogleSearchAPIWrapper
 from langchain.agents import initialize_agent, load_tools, AgentType
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.chat_models import ChatOpenAI
-from langchain.memory import RedisChatMessageHistory, ConversationSummaryBufferMemory
+from langchain.memory import RedisChatMessageHistory, ConversationSummaryBufferMemory, ConversationTokenBufferMemory
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder, HumanMessagePromptTemplate
 from langchain.schema import SystemMessage
 import json
@@ -130,24 +130,21 @@ def chat_process(request):
 
     llm = ChatOpenAI(
         openai_api_key=settings.OPENAI_API_KEY,
-        model_name="gpt-4",
+        model_name="gpt-3.5-turbo",
         streaming=True,
         callbacks=[handler]
     )
 
-    message_history = RedisChatMessageHistory(
-        url=settings.REDIS_URL, ttl=86400 * 30, session_id=uuid
-    )
-
-    # memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True, chat_memory=message_history)
-    memory = ConversationSummaryBufferMemory(
+    memory = ConversationTokenBufferMemory(
         llm=ChatOpenAI(
             openai_api_key=settings.OPENAI_API_KEY
         ),
         memory_key="chat_history",
-        max_token_limit=200,
+        max_token_limit=2000,
         return_messages=True,
-        chat_memory=message_history
+        chat_memory=RedisChatMessageHistory(
+            url=settings.REDIS_URL, ttl=86400 * 30, session_id=uuid
+        )
     )
 
     chat_llm_chain = LLMChain(
