@@ -4,10 +4,9 @@ import openai
 from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from langchain import LLMChain, GoogleSearchAPIWrapper
 from langchain.agents import initialize_agent, load_tools, AgentType
-from langchain.callbacks import StdOutCallbackHandler
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.chat_models import ChatOpenAI
-from langchain.memory import ConversationBufferMemory, RedisChatMessageHistory, ConversationSummaryBufferMemory
+from langchain.memory import RedisChatMessageHistory, ConversationSummaryBufferMemory
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder, HumanMessagePromptTemplate
 from langchain.schema import SystemMessage
 import json
@@ -19,8 +18,7 @@ def index(request):
     return HttpResponse("Hello, world.")
 
 
-class MyCustomHandler(BaseCallbackHandler):
-    """Async callback handler that can be used to handle callbacks from langchain."""
+class CallbackHandler(BaseCallbackHandler):
 
     def __init__(self, queue):
         self.queue = queue
@@ -31,7 +29,7 @@ class MyCustomHandler(BaseCallbackHandler):
 
 def chat_agent(request):
     messages_queue = queue.Queue()
-    handler = MyCustomHandler(messages_queue)
+    handler = CallbackHandler(messages_queue)
 
     data = json.loads(request.body.decode("utf-8"))
     message = data.get("prompt")
@@ -117,7 +115,7 @@ def chat_agent(request):
 
 def chat_process(request):
     messages_queue = queue.Queue()
-    handler = MyCustomHandler(messages_queue)
+    handler = CallbackHandler(messages_queue)
 
     data = json.loads(request.body.decode("utf-8"))
     message = data.get("prompt")
